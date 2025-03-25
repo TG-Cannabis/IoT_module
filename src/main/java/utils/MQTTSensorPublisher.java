@@ -1,6 +1,7 @@
 package utils;
 
 import model.SensorData;
+import model.SensorInformation;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
@@ -47,8 +48,26 @@ public class MQTTSensorPublisher {
     }
 
     private static SensorData generateSensorData() {
-        String sensorName = "sensor_" + (random.nextInt(3) + 1); // sensor_1, sensor_2, sensor_3
-        double value = 20 + (random.nextDouble() * 10); // Valores entre 20 y 30
-        return new SensorData(sensorName, value);
+        Random random = new Random();
+
+        // Crear información del sensor
+        SensorInformation sensorInfo = new SensorInformation();
+        sensorInfo.setSensorType(random.nextBoolean() ? "temperature" : "humidity"); // Tipo de sensor aleatorio
+        sensorInfo.setLocation(random.nextBoolean() ? "Office" : "Warehouse"); // Ubicación aleatoria
+        sensorInfo.setId("sensor_" + (random.nextInt(3) + 1)); // sensor_1, sensor_2, sensor_3
+
+        // Generar valor del sensor
+        double value = sensorInfo.getSensorType().equals("temperature")
+                ? 20 + (random.nextDouble() * 10)  // Temperatura entre 20 y 30
+                : 40 + (random.nextDouble() * 30); // Humedad entre 40 y 70
+
+        // Crear objeto SensorData
+        SensorData data = new SensorData();
+        data.setSensorName(sensorInfo);
+        data.setValue(value);
+        data.setTimestamp(System.currentTimeMillis());
+
+        return data;
     }
+
 }
