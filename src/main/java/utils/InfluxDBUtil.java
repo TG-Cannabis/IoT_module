@@ -1,55 +1,36 @@
 package utils;
 
+import com.influxdb.client.domain.WritePrecision;
 import io.github.cdimascio.dotenv.Dotenv;
+import com.influxdb.client.*;
+import com.influxdb.client.write.Point;
 import model.SensorData;
-import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.Point;
-import org.influxdb.dto.Query;
-import org.influxdb.dto.QueryResult;
-
-import java.util.concurrent.TimeUnit;
 
 public class InfluxDBUtil {
-    private InfluxDB influxDB;
-    private String database;
+    private InfluxDBClient influxDBClient;
+    private String bucket;
+    private String org;
 
     public InfluxDBUtil() {
-        connect();
-    }
-
-    private void connect() {
-        Dotenv dotenv = Dotenv.configure()
-                .directory("src/main/resources")
-                .ignoreIfMalformed()
-                .ignoreIfMissing()
-                .load();
-
+        Dotenv dotenv = Dotenv.configure().directory("src/main/resources").load();
         String url = dotenv.get("INFLUXDB_URL");
-        String username = dotenv.get("INFLUXDB_USERNAME");
-        String password = dotenv.get("INFLUXDB_PASSWORD");
-        database = dotenv.get("INFLUXDB_DATABASE");
+        String token = dotenv.get("INFLUXDB_TOKEN");
+        this.bucket = dotenv.get("INFLUXDB_BUCKET");
+        this.org = dotenv.get("INFLUXDB_ORG");
 
-        influxDB = InfluxDBFactory.connect(url, username, password);
-        influxDB.setDatabase(database);
-        influxDB.enableBatch(2000, 100, TimeUnit.MILLISECONDS);
+        // Conectar a InfluxDB con Token
+        this.influxDBClient = InfluxDBClientFactory.create(url, token.toCharArray());
     }
 
     public void writeSensorData(SensorData data) {
-        Point point = Point.measurement("sensores")
-                .time(data.getTimestamp(), TimeUnit.MILLISECONDS)
-                .tag("sensor", data.getSensorName())
-                .addField("valor", data.getValue())
-                .build();
+        WriteApiBlocking writeApi = influxDBClient.getWriteApiBlocking();
 
-        influxDB.write(point);
-    }
+        Point point = Point.measurement("sensor_data")
+                .addTag("sensor", data.getSensorName())
+                .addField("value", data.getValue())
+                .time(data.getTimestamp(), WritePrecision.MS);
 
-    public QueryResult queryData(String query) {
-        return influxDB.query(new Query(query, database));
-    }
-
-    public void close() {
-        influxDB.close();
+        writeApi.writePoint(bucket, org, point);
+        System.out.println("✅ Datos guardados en InfluxDB: " + data);
     }
 }
