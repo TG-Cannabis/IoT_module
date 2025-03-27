@@ -1,4 +1,4 @@
-package utils;
+package controller.mqtt;
 
 import model.SensorData;
 import model.SensorInformation;

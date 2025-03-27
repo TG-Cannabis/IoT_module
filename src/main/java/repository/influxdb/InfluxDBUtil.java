@@ -1,4 +1,4 @@
-package utils;
+package repository.influxdb;
 
 import com.influxdb.client.*;
 import com.influxdb.client.domain.DeletePredicateRequest;

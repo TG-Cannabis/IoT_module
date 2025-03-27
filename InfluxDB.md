@@ -36,16 +36,16 @@ sudo apt-get update && sudo apt-get install influxdb2
 
 ```sh
 # Iniciar el servicio de InfluxDB
-sudo service influxdb start
+sudo service repository.influxdb start
 
 # Verificar que InfluxDB está corriendo
-sudo service influxdb status
+sudo service repository.influxdb status
 ```
 
 Si el servicio no se inicia automáticamente después de reiniciar el sistema, habilítalo con:
 
 ```sh
-sudo systemctl enable influxdb
+sudo systemctl enable repository.influxdb
 ```
 
 ---
@@ -68,7 +68,7 @@ ARG2="--storage-wal-fsync-delay=15m"
 Luego, edita el archivo del servicio en **systemd** para aplicar las variables:
 
 ```sh
-sudo nano /lib/systemd/system/influxdb.service
+sudo nano /lib/systemd/system/repository.influxdb.service
 ```
 
 Modifica la línea `ExecStart` para incluir las variables:
@@ -81,7 +81,7 @@ Finalmente, recarga los servicios para aplicar los cambios:
 
 ```sh
 sudo systemctl daemon-reload
-sudo systemctl restart influxdb
+sudo systemctl restart repository.influxdb
 ```
 
 ---

@@ -1,4 +1,4 @@
-package utils;
+package controller.mqtt;
 
 import io.github.cdimascio.dotenv.Dotenv;
 import com.google.gson.Gson;
@@ -7,6 +7,7 @@ import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import repository.influxdb.InfluxDBUtil;
 
 import java.util.List;
 import java.util.Properties;
