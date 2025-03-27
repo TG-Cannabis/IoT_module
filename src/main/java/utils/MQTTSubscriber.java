@@ -4,6 +4,7 @@ import io.github.cdimascio.dotenv.Dotenv;
 import com.google.gson.Gson;
 import model.SensorData;
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
@@ -31,7 +32,7 @@ public class MQTTSubscriber {
             kafkaTopic = dotenv.get("KAFKA_TOPIC");
 
             // Configurar Kafka Producer
-            setupKafkaProducer(kafkaBrokers);
+            kafkaProducer = setupKafkaProducer();
 
             // Configurar cliente MQTT
             MqttClient mqttClient = new MqttClient(mqttBroker, mqttClientId, new MemoryPersistence());
@@ -72,17 +73,27 @@ public class MQTTSubscriber {
     /**
      * Configura el Kafka Producer.
      */
-    private static void setupKafkaProducer(String kafkaBrokers) {
-        Properties props = new Properties();
-        props.put("bootstrap.servers", kafkaBrokers);
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("acks", "all");
-        props.put("retries", 3);
+    private static KafkaProducer<String, String> setupKafkaProducer() {
+        Dotenv dotenv = Dotenv.configure().directory("src/main/resources").load();
 
-        kafkaProducer = new KafkaProducer<>(props);
-        checkKafkaAvailability();
+        String kafkaBroker = dotenv.get("KAFKA_BROKER");
+        String kafkaTopic = dotenv.get("KAFKA_TOPIC");
+
+        // Verifica que las variables no sean null
+        if (kafkaBroker == null || kafkaTopic == null) {
+            throw new IllegalArgumentException("❌ Error: KAFKA_BROKER o KAFKA_TOPIC no están definidos en el .env");
+        }
+
+        // Configurar propiedades de Kafka
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBroker);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+
+        System.out.println("✅ Kafka Producer configurado con broker: " + kafkaBroker);
+        return new KafkaProducer<>(props);
     }
+
 
     /**
      * Intenta enviar datos a Kafka. Si falla, los guarda en InfluxDB.
@@ -97,6 +108,7 @@ public class MQTTSubscriber {
                 if (exception == null) {
                     System.out.println("🚀 Enviado a Kafka: " + jsonData);
                 } else {
+                    System.out.println(exception.getMessage());
                     System.err.println("❌ Kafka no disponible. Guardando en InfluxDB...");
                     influxDBUtil.writeSensorData(data);
                     kafkaAvailable = false;
@@ -114,14 +126,25 @@ public class MQTTSubscriber {
     private static void checkKafkaAvailability() {
         try {
             ProducerRecord<String, String> testRecord = new ProducerRecord<>(kafkaTopic, "test-key", "test-message");
-            kafkaProducer.send(testRecord).get();
-            kafkaAvailable = true;
-            System.out.println("✅ Kafka está disponible.");
+
+            // Enviar mensaje y manejar respuesta de forma asíncrona
+            kafkaProducer.send(testRecord, (metadata, exception) -> {
+                if (exception == null) {
+                    kafkaAvailable = true;
+                    System.out.println("✅ Kafka está disponible.");
+                } else {
+                    kafkaAvailable = false;
+                    System.err.println("❌ Kafka no disponible. Usando InfluxDB.");
+                    exception.printStackTrace();  // Imprime el error exacto
+                }
+            });
         } catch (Exception e) {
             kafkaAvailable = false;
-            System.err.println("❌ Kafka no disponible. Usando InfluxDB.");
+            System.err.println("❌ Error inesperado al verificar Kafka.");
+            e.printStackTrace();
         }
     }
+
 
     /**
      * Inicia un proceso en segundo plano para reintentar enviar datos de InfluxDB a Kafka.
@@ -135,7 +158,7 @@ public class MQTTSubscriber {
             if (kafkaAvailable) {
                 resendDataFromInfluxDB();
             }
-        }, 10, 30, TimeUnit.SECONDS); // Intenta cada 30 segundos
+        }, 5, 5, TimeUnit.SECONDS); // Intenta cada 30 segundos
     }
 
     /**
