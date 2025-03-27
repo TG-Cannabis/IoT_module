@@ -1,6 +1,3 @@
-Para un README atractivo para tu repositorio de IoT, aquí te dejo una propuesta:
-
-```markdown
 # IoT Module for Cannabis Monitoring
 
 Welcome to the **IoT Module** designed for cannabis cultivation monitoring and management. This project integrates various IoT technologies to provide a seamless and real-time data collection experience.
@@ -55,5 +52,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For questions or issues, open a GitHub issue or contact the maintainers.
-```
+
 
