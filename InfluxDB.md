@@ -1,6 +1,3 @@
-Aquí tienes el **Markdown** sin compilar:
-
-```md
 # 🚀 Instalación y Configuración de InfluxDB en Ubuntu/Debian  
 
 ## 🔑 Agregar la clave de InfluxData y el repositorio  
@@ -94,4 +91,3 @@ Ahora puedes acceder a la **CLI de InfluxDB** con:
 influx setup
 ```
 ¡InfluxDB está listo para almacenar y gestionar tus datos! 🚀
-```
